@@ -1,0 +1,46 @@
+1. login in niconico
+	a. POST "https://secure.nicovideo.jp/secure/login?site=niconico"
+		mail_tel: username,
+		password: password
+2. get default list
+	a. GET "http://sp.nicovideo.jp/my/mylist/deflist"
+3. extract playlist id from above page
+	a. use regex "/Nico_VideoListHtmlLoader\.setVideoIdList\((.+)\)\;/i"
+	b. join the video id list to an array
+4. get playlist html
+	a. use the above array tostring
+	b. GET "http://sp.nicovideo.jp/api/videolist?v=" + video id list string
+5. get video
+	a. GET "http://sp.nicovideo.jp/watch/" + video id
+	b. extract playlist_token from above
+		i. use regex "/playlist_token=(.+)"/"
+	c. GET "http://www.nicovideo.jp//watch/" + video id + "?mode=sp_web_html5&playlist_token=" + playlist_token
+	d. use the watchAuthKey from above xml response
+		i. POST "http://flapi.nicovideo.jp/api/getflv"
+			device: iphone3,
+			watch_auth_key: watchAuthKey,
+			v: video id,
+			eco: 1
+	e. recived a string like below
+		"thread_id=1389435643&l=1175&url=http%3A%2F%2Fsmile-cln60.nicovideo.jp%2Fsmile%3Fm%3D22646825.43231low&link=http%3A%2F%2Fwww.smilevideo.jp%2Fview%2F22646825%2F33317570&ms=http%3A%2F%2Fmsg.nicovideo.jp%2F36%2Fapi%2F&ms_sub=http%3A%2F%2Fsub.msg.nicovideo.jp%2F36%2Fapi%2F&user_id=33317570&is_premium=0&nickname=jackycute&time=1405998285329&done=true&hms=hiroba.nicovideo.jp&hmsp=2552&hmst=280&hmstk=1405998345.I2eMS9Mx9hosVYQPbAr_9UHh5xM"
+	f. decode above string you can get
+		thread_id: use for request video msg,
+		l: unknown,
+		url: video src url,
+		link: report abuse link,
+		ms: url for request video msg,
+		ms_sub: url for request video msg sub(unknown),
+		user_id: user id in the niconico,
+		is_premium: 0 is no, 1 is yes,
+		nickname: nickname in the niconico,
+		time: timestamp(in milliseconds),
+		done: "true",
+		hms: "hiroba.nicovideo.jp",
+		hmsp: unknown,
+		hmst: unknown,
+		hmstk: unknown
+6. get video msg
+	a. build xml query from above video info
+		"<packet><thread thread=" + thread_id + " version="20061206" res_from="-500" fork="0" user_id=" + user_id + "/></packet>"
+	b. POST this xml to the ms url from above video info
+	c. received xml contain multi video msg
